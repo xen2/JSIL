@@ -235,6 +235,15 @@ namespace JSIL {
             )
                 return new JSUntranslatableExpression(node);
 
+            if ((IsEnum(node.Arguments[0].ExpectedType)
+                || IsEnum(node.Arguments[1].ExpectedType))
+            ) {
+                if (op == JSOperator.Equal)
+                    op = JSOperator.EqualNotStrict;
+                else if (op == JSOperator.NotEqual)
+                    op = JSOperator.NotEqualNotStrict;
+            }
+
             return new JSBinaryOperatorExpression(
                 op, lhs, rhs, node.ExpectedType ?? node.InferredType
             );
@@ -1954,6 +1963,15 @@ namespace JSIL {
         }
 
         protected JSExpression Translate_DefaultValue (ILExpression node, TypeReference type) {
+            if (type.IsGenericParameter) {
+                return
+                    new JSTernaryOperatorExpression(
+                        new JSMemberReferenceExpression(new JSDotExpression(new JSType(type),
+                                                                            new JSStringIdentifier("IsValueType"))),
+                        new JSNewExpression(new JSType(type), null),
+                        JSLiteral.DefaultValue(type),
+                        type);
+            }
             return JSLiteral.DefaultValue(type);
         }
 

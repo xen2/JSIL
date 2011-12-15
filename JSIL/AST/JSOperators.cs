@@ -44,6 +44,8 @@ namespace JSIL.Ast {
         public static readonly JSAssignmentOperator BitwiseOrAssignment = new JSAssignmentOperator("|=");
         public static readonly JSAssignmentOperator BitwiseXorAssignment = new JSAssignmentOperator("^=");
 
+        public static readonly JSBinaryOperator EqualNotStrict = new JSBinaryOperator("==");
+        public static readonly JSBinaryOperator NotEqualNotStrict = new JSBinaryOperator("!=");
         public static readonly JSBinaryOperator Equal = new JSBinaryOperator("===");
         public static readonly JSBinaryOperator NotEqual = new JSBinaryOperator("!==");
         public static readonly JSBinaryOperator LessThan = new JSBinaryOperator("<");

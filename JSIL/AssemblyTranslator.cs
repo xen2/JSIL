@@ -515,21 +515,24 @@ namespace JSIL {
             output.OpenBrace();
 
             bool isFirst = true;
-            foreach (var m in iface.Methods) {
-                var methodInfo = TypeInfoProvider.GetMethod(m);
-                if ((methodInfo != null) && methodInfo.IsIgnored)
-                    continue;
+            foreach (var methodGroup in iface.Methods.GroupBy(method => method.Name)) {
+                int methodGroupIndex = 0;
+                foreach (var m in methodGroup) {
+                    var methodInfo = TypeInfoProvider.GetMethod(m);
+                    if ((methodInfo != null) && methodInfo.IsIgnored)
+                        continue;
 
-                if (!isFirst) {
-                    output.Comma();
-                    output.NewLine();
+                    if (!isFirst) {
+                        output.Comma();
+                        output.NewLine();
+                    }
+
+                    output.Value(Util.EscapeIdentifier(methodGroup.Count() == 1 ? m.Name : m.Name + "$" + methodGroupIndex++));
+                    output.Token(": ");
+                    output.Identifier("Function");
+
+                    isFirst = false;
                 }
-
-                output.Value(Util.EscapeIdentifier(m.Name));
-                output.Token(": ");
-                output.Identifier("Function");
-
-                isFirst = false;
             }
 
             foreach (var p in iface.Properties) {
@@ -991,6 +994,33 @@ namespace JSIL {
                 output.OpenBracket(true);
                 output.CommaSeparatedList(interfaces, ListValueType.TypeReference);
                 output.CloseBracket(true, () => {
+                    output.RPar();
+                    output.Semicolon();
+                });
+            }
+
+            if (typedef.HasCustomAttributes) {
+                output.Identifier("JSIL.RegisterCustomAttributes", null);
+                output.LPar();
+                dollar(output);
+                output.Comma();
+                output.OpenBracket(true);
+                bool isFirst = true;
+                foreach (var customAttribute in typedef.CustomAttributes)
+                {
+                    if (!isFirst)
+                        output.Comma();
+                    isFirst = false;
+                    output.OpenBracket(true);
+                    output.TypeReference(customAttribute.AttributeType);
+                    output.Comma();
+                    output.OpenBracket(true);
+                    output.CommaSeparatedList(customAttribute.ConstructorArguments.Select(x => x.Value));
+                    output.CloseBracket(true);
+                    output.CloseBracket(true);
+                }
+                output.CloseBracket(true, () =>
+                {
                     output.RPar();
                     output.Semicolon();
                 });
