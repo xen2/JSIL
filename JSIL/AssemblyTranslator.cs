@@ -931,7 +931,7 @@ namespace JSIL {
                     }
 
                     output.OpenBracket();
-                    output.Value(sf.Name);
+                    output.Value(TypeInfo.GetOriginalName(sf.Name) ?? sf.Name);
                     output.Comma();
                     output.TypeReference(sf.FieldType);
                     output.CloseBracket();
