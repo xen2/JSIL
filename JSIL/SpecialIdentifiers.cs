@@ -144,6 +144,15 @@ namespace JSIL {
             );
         }
 
+        public JSNewExpression NewIndexerReference (TypeReference targetType, JSExpression target, JSExpression index) {
+            var resultType = new ByReferenceType(targetType);
+
+            return new JSNewExpression(
+                Dot("IndexerReference", resultType),
+                null, target, index
+            );
+        }
+
         public JSNewExpression NewReference (JSExpression initialValue) {
             var resultType = new ByReferenceType(initialValue.GetExpectedType(TypeSystem));
 

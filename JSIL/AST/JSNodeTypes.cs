@@ -1226,6 +1226,17 @@ namespace JSIL.Ast {
                 return true;
             }
 
+            if (refe != null) {
+                var refe2 = refe.Referent as JSReferenceExpression;
+                if (refe2 != null) {
+                    var indexer = refe2.Referent as JSIndexerExpression;
+                    if (indexer != null) {
+                        materialized = jsil.NewIndexerReference(indexer.GetExpectedType(jsil.TypeSystem), indexer.Target, indexer.Index);
+                        return true;
+                    }
+                }
+            }
+
             materialized = null;
             return false;
         }
