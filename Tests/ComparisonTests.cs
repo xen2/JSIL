@@ -217,6 +217,15 @@ namespace JSIL.Tests {
         }
 
         [Test]
+        public void Abstract()
+        {
+            using (var test = new ComparisonTest(@"SimpleTestCases\InheritedMethods.cs"))
+                test.Run();
+            using (var test = new ComparisonTest(@"FailingTestCases\InterfaceAbstractMethods.cs"))
+                test.Run();
+        }
+
+        [Test]
         public void YieldReturn () {
             using (var test = new ComparisonTest(@"TestCases\YieldReturn.cs"))
                 test.Run();

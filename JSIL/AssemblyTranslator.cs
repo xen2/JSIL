@@ -671,6 +671,17 @@ namespace JSIL {
             } else if (typeInfo.IsDelegate) {
                 TranslateDelegate(context, output, typedef, typeInfo);
                 return;
+            } else if (typeInfo.FullName == "System.Delegate") {
+                output.Identifier(output.PrivateToken);
+                output.Dot();
+                output.Identifier(typeInfo.FullName, EscapingMode.TypeIdentifier);
+                output.Space();
+                output.Token("=");
+                output.Space();
+                output.Identifier(typeInfo.FullName, EscapingMode.TypeIdentifier);
+                output.Semicolon();
+                output.NewLine();
+                return;
             }
 
             var declaringType = typedef.DeclaringType;
@@ -1462,7 +1473,7 @@ namespace JSIL {
 
             if (methodInfo.IsIgnored)
                 return;
-            if (!method.HasBody)
+            if (!method.HasBody && !method.IsAbstract)
                 return;
 
             if (methodIsProxied) {
@@ -1495,10 +1506,13 @@ namespace JSIL {
             }
 
             JSFunctionExpression function;
-            function = FunctionCache.GetExpression(new QualifiedMemberIdentifier(
-                methodInfo.DeclaringType.Identifier,
-                methodInfo.Identifier
-            ));
+            if (method.IsAbstract)
+                function = null;
+            else
+                function = FunctionCache.GetExpression(new QualifiedMemberIdentifier(
+                    methodInfo.DeclaringType.Identifier,
+                    methodInfo.Identifier
+                ));
 
             if (bodyTransformer != null)
                 bodyTransformer(function);

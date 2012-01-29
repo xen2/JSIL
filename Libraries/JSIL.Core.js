@@ -1395,9 +1395,9 @@ JSIL.MakeEnum = function (fullName, isPublic, members, isFlagsEnum) {
   JSIL.RegisterName(fullName, $private, isPublic, function () { return result; });
 };
 
-JSIL.MakeInterfaceMemberGetter = function (thisReference, name) {
+JSIL.MakeInterfaceMemberGetter = function (name) {
   return function () {
-    return thisReference[name];
+    return this[name];
   };
 };
 
@@ -1518,7 +1518,7 @@ JSIL.ImplementInterfaces = function (type, interfacesToImplement) {
           Object.defineProperty(proto, qualifiedName, {
             configurable: true,
             enumerable: true,
-            get: JSIL.MakeInterfaceMemberGetter(proto, key)
+            get: JSIL.MakeInterfaceMemberGetter(key)
           });
         } else if (memberType === Property) {
           Object.defineProperty(proto, qualifiedName, shortImpl);
