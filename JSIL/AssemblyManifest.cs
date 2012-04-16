@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using JSIL.Internal;
@@ -24,6 +25,8 @@ namespace JSIL {
 
             internal Token (string assembly) {
                 Assembly = assembly;
+                MD5 md5 = new MD5CryptoServiceProvider();
+                ID = Assembly.GetHashCode();
             }
         }
 
