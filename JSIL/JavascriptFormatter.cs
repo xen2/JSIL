@@ -77,6 +77,7 @@ namespace JSIL.Internal {
 
         public MethodReference CurrentMethod = null;
 
+        protected readonly Dictionary<AssemblyManifest.Token, string> references = new Dictionary<AssemblyManifest.Token, string>();
         protected readonly HashSet<string> DeclaredNamespaces = new HashSet<string>();
         protected readonly bool Stubbed;
 
@@ -108,10 +109,12 @@ namespace JSIL.Internal {
 
         protected void WriteToken (AssemblyManifest.Token token) {
             if (Stubbed && Configuration.GenerateSkeletonsForStubbedAssemblies.GetValueOrDefault(false)) {
-                int id = int.Parse(token.IDString.Replace("$asm", ""), NumberStyles.HexNumber);
-                WriteRaw("$asms[{0}]", id);
+                WriteRaw("$asms[{0}]", token.UniqueID);
             } else {
-                WriteRaw(token.IDString);
+                string referenceString;
+                if (!references.TryGetValue(token, out referenceString))
+                    references.Add(token, referenceString = string.Format("$ref{0:X}_{1:X2}", this.PrivateToken.UniqueID, references.Count));
+                WriteRaw(referenceString);
             }
         }
 
@@ -934,15 +937,17 @@ namespace JSIL.Internal {
                 OpenBrace();
 
                 bool isFirst = true;
-                foreach (var kvp in Manifest.Entries) {
-                    if (!isFirst) {
+                foreach (var assemblyReference in Assembly.Modules.SelectMany(x => x.AssemblyReferences).Distinct()) {
+                    var token = Manifest.GetPrivateToken(assemblyReference.FullName);
+                    if (!isFirst)
+                    {
                         Comma();
                         NewLine();
                     }
 
-                    Value(int.Parse(kvp.Key.Replace("$asm", ""), NumberStyles.HexNumber));
+                    Value(token.UniqueID);
                     WriteRaw(": ");
-                    Value(kvp.Value);
+                    Value(token.Assembly);
 
                     isFirst = false;
                 }
@@ -955,13 +960,31 @@ namespace JSIL.Internal {
             } else {
                 WriteRaw("var");
                 Space();
-                Identifier(PrivateToken.IDString);
+                WriteToken(PrivateToken);
                 WriteRaw(" = ");
                 WriteRaw("JSIL.DeclareAssembly");
                 LPar();
                 Value(Assembly.FullName);
                 RPar();
                 Semicolon();
+
+                foreach (var assemblyReference in Assembly.Modules.SelectMany(x => x.AssemblyReferences).Distinct()) {
+                    var token = Manifest.GetPrivateToken(assemblyReference.FullName);
+                    Manifest.AssignIdentifiers();
+
+                    WriteRaw("var");
+                    Space();
+                    WriteToken(token);
+                    WriteRaw(" = ");
+                    WriteRaw("JSIL.GetAssembly");
+                    LPar();
+                    Value(token.Assembly);
+                    RPar();
+                    Semicolon();
+                }
+
+                foreach (var kvp in Manifest.Entries) {
+                }
             }
         }
 

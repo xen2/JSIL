@@ -11,14 +11,21 @@ namespace JSIL {
         public class Token {
             public readonly string Assembly;
 
-            public Int32? ID {
+            public int? ID {
                 get;
                 internal set;
             }
 
+            public uint UniqueID {
+                get {
+                    return BitConverter.ToUInt32(new System.Security.Cryptography.SHA1CryptoServiceProvider()
+                                                    .ComputeHash(Encoding.ASCII.GetBytes(Assembly)).Take(4).ToArray(), 0);
+                }
+            }
+
             public string IDString {
                 get {
-                    return String.Format("$asm{0:X2}", ID.Value);
+                    return String.Format("$asm{0:X2}", ID);
                 }
             }
 
@@ -43,7 +50,8 @@ namespace JSIL {
             Tokens.Dispose();
         }
 
-        public void AssignIdentifiers () {
+        public void AssignIdentifiers()
+        {
             if (AssignedIdentifiers)
                 return;
 
@@ -52,9 +60,11 @@ namespace JSIL {
 
             int i = max + 1;
 
-            foreach (var name in names) {
+            foreach (var name in names)
+            {
                 Token token;
-                if (Tokens.TryGet(name, out token)) {
+                if (Tokens.TryGet(name, out token))
+                {
                     if (!token.ID.HasValue)
                         token.ID = i++;
                 }

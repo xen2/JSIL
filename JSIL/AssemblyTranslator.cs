@@ -336,13 +336,17 @@ namespace JSIL {
         public TranslationResult Translate (
             string assemblyPath, bool scanForProxies = true
         ) {
+            return Translate(new[] { assemblyPath }, scanForProxies);
+        }
+
+        public TranslationResult Translate (string[] assemblyPaths, bool scanForProxies = true) {
             if (Configuration.RunBugChecks.GetValueOrDefault(true))
                 BugChecks.RunBugChecks();
             else
                 Console.Error.WriteLine("// WARNING: Bug checks have been suppressed. You may be running JSIL on a broken/unsupported .NET runtime.");
 
             var result = new TranslationResult(this.Configuration);
-            var assemblies = LoadAssembly(assemblyPath);
+            var assemblies = assemblyPaths.Select(LoadAssembly).SelectMany(x => x).GroupBy(x => x.FullName).Select(x => x.First()).ToArray();
             var parallelOptions = GetParallelOptions();
 
             if (scanForProxies)
