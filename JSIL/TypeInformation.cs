@@ -1106,6 +1106,8 @@ namespace JSIL.Internal {
                 return;
 
             foreach (var ca in cas) {
+                if (ca.AttributeType.Name == "AsyncStateMachineAttribute" && ca.AttributeType.Namespace == "System.Runtime.CompilerServices")
+                    continue;
                 AttributeGroup existing;
                 if (TryGetValue(ca.AttributeType.FullName, out existing))
                     existing.Entries.Add(new AttributeGroup.Entry(ca));
