@@ -2657,6 +2657,12 @@ JSIL.$ApplyMemberHiding = function (typeObject, memberList, resolveContext) {
         lhs._data.isPlaceholder ? 1 : 0,
         rhs._data.isPlaceholder ? 1 : 0
       );
+      
+    if (result === 0)
+      result = -JSIL.CompareValues(
+        lhs._data.isExternalImplementation ? 1 : 0,
+        rhs._data.isExternalImplementation ? 1 : 0
+      );
 
     if (result === 0)
       result = -JSIL.CompareValues(
@@ -2675,7 +2681,7 @@ JSIL.$ApplyMemberHiding = function (typeObject, memberList, resolveContext) {
   //  methods unless they are all that remains (in which case the most-derived one will
   //  win).
   memberList.sort(comparer);
-
+  
   var originalCount = memberList.length;
 
   var currentSignatureHash = null;
@@ -3071,7 +3077,7 @@ JSIL.ApplyExternals = function (publicInterface, typeObject, fullName) {
       key = key.replace(rawSuffix, "");
       isRaw = true;
     }
-
+    
     if (key.indexOf(constantSuffix) > 0) {
       Object.defineProperty(target, key.replace(constantSuffix, ""), externals[k]);
       continue;
@@ -3080,8 +3086,12 @@ JSIL.ApplyExternals = function (publicInterface, typeObject, fullName) {
     var member = externals[k][0]
     var value = externals[k][1];
 
-    if (member !== null)
+    if (member !== null) {
+      if (member !== undefined) {
+        member[2].isExternalImplementation = true;
+      }
       typeObject.__Members__.push(member);
+    }
 
     if (isRaw)
       typeObject.__RawMethods__.push([isStatic, key]);
@@ -4562,7 +4572,10 @@ JSIL.InterfaceBuilder.prototype.Method = function (_descriptor, methodName, sign
 
   var fullName = this.namespace + "." + methodName;
 
-  JSIL.SetValueProperty(descriptor.Target, mangledName, fn);
+  // If already set, do not overwrite (give priority to externals)
+  if (!descriptor.Target.hasOwnProperty(mangledName)) {
+    JSIL.SetValueProperty(descriptor.Target, mangledName, fn);
+  }
 
   this.PushMember("MethodInfo", descriptor, { 
     signature: signature, 
