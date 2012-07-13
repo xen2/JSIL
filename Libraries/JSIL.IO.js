@@ -734,7 +734,9 @@ JSIL.ImplementExternals("System.IO.BinaryWriter", function ($) {
   $.Method({Static:false, Public:true }, "Write", 
     (new JSIL.MethodSignature(null, [$.Single], [])), 
     function Write (value) {
-      throw new Error('Not implemented');
+      var array = new Float32Array(1);
+      array[0] = value;
+      this.m_stream.Write(new Uint8Array(array.buffer), 0, 4);
     }
   );
 
