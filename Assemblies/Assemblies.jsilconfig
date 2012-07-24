@@ -1,0 +1,17 @@
+{
+  "OutputDirectory": "%configpath%",
+  "FrameworkVersion": 4.0,
+  "Assemblies": {
+    "Ignored": [
+      "Microsoft.VisualC,",
+      "Accessibility,",
+      "SMDiagnostics,",
+      "System.EnterpriseServices,",
+      "System.Security,",
+      "System.Runtime.Serialization.Formatters.Soap,",
+      "System.Runtime.DurableInstancing,",
+      "System.Data.SqlXml,",
+      "JSIL.Meta,"
+    ]
+  }
+}
