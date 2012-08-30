@@ -1401,98 +1401,86 @@ namespace JSIL {
             if (isOverloaded && CanUseFastOverloadDispatch(method))
                 isOverloaded = false;
 
+            // Always force full signature resolution since interfaces always provide them, and sometimes using signature resolution isn't accurate
+            // (because it redirects to class method signature resolution, which might includes additional methods)
+            if (method != null && method.DeclaringType.IsInterface) {
+                isOverloaded = true;
+            }
+
             var oldInvoking = ReferenceContext.InvokingMethod;
             try {
-                if (isOverloaded) {
 
-                    var methodName = Util.EscapeIdentifier(jsm.GetNameForInstanceReference(), EscapingMode.MemberIdentifier);
+                Action genericArgs = () =>
+                {
+                    if (hasGenericArguments)
+                    {
+                        Output.OpenBracket(false);
+                        Output.CommaSeparatedList(invocation.GenericArguments, ReferenceContext, ListValueType.TypeIdentifier);
+                        Output.CloseBracket(false);
+                    }
+                    else
+                        Output.Identifier("null", null);
+                };
 
-                    Output.MethodSignature(jsm.Reference, method.Signature, ReferenceContext);
-                    Output.Dot();
-
-                    ReferenceContext.InvokingMethod = jsm.Reference;
-
-                    Action genericArgs = () => {
-                        if (hasGenericArguments) {
-                            Output.OpenBracket(false);
-                            Output.CommaSeparatedList(invocation.GenericArguments, ReferenceContext, ListValueType.TypeIdentifier);
-                            Output.CloseBracket(false);
-                        } else
-                            Output.Identifier("null", null);
-                    };
-
-                    if (isStatic) {
-                        Output.Identifier("CallStatic");
-                        Output.LPar();
-
+                if (isStatic) {
+                    if (!invocation.Type.IsNull) {
                         Visit(invocation.Type);
-                        Output.Comma();
+                        Output.Dot();
+                    }
 
-                        Output.Value(methodName);
-                        Output.Comma();
-                        genericArgs();
-
-                        if (hasArguments)
-                            Output.Comma();
-                    } else if (invocation.ExplicitThis) {
-                        Output.Identifier("Call");
+                    if (isOverloaded) {
+                        Output.Identifier(method.GetName(false) + "$" + method.Signature.UniqueHash);
                         Output.LPar();
+                        if (hasGenericArguments) {
+                            Output.CommaSeparatedList(invocation.GenericArguments, ReferenceContext, ListValueType.TypeIdentifier);
+                            if (hasArguments)
+                                Output.Comma();
+                        }
+                    } else {
+                        Visit(invocation.Method);
+                        Output.LPar();
+                    }
 
+                } else if (invocation.ExplicitThis) {
+                    if (!invocation.Type.IsNull) {
                         Visit(invocation.Type);
                         Output.Dot();
                         Output.Identifier("prototype", null);
-                        Output.Comma();
-
-                        Output.Value(methodName);
-                        Output.Comma();
-                        genericArgs();
-                        Output.Comma();
-                        Visit(invocation.ThisReference);
-
-                        if (hasArguments)
-                            Output.Comma();
-                    } else {
-                        Output.Identifier("CallVirtual");
-                        Output.LPar();
-
-                        Output.Value(methodName);
-                        Output.Comma();
-                        genericArgs();
-                        Output.Comma();
-                        Visit(invocation.ThisReference);
-
-                        if (hasArguments)
-                            Output.Comma();
+                        Output.Dot();
                     }
-                } else {
-                    if (isStatic) {
-                        if (!invocation.Type.IsNull) {
-                            Visit(invocation.Type);
-                            Output.Dot();
-                        }
 
-                        Visit(invocation.Method);
+                    if (isOverloaded) {
+                        Output.Identifier(method.GetName(false) + "$" + method.Signature.UniqueHash);
+                        Output.Dot();
+                        Output.Identifier("call", null);
                         Output.LPar();
-                    } else if (invocation.ExplicitThis) {
-                        if (!invocation.Type.IsNull) {
-                            Visit(invocation.Type);
-                            Output.Dot();
-                            Output.Identifier("prototype", null);
-                            Output.Dot();
+                        if (hasGenericArguments) {
+                            Output.CommaSeparatedList(invocation.GenericArguments, ReferenceContext, ListValueType.TypeIdentifier);
+                            Output.Comma();
                         }
-
+                    } else {
                         Visit(invocation.Method);
                         Output.Dot();
                         Output.Identifier("call", null);
                         Output.LPar();
+                    }
 
-                        Visit(invocation.ThisReference);
+                    Visit(invocation.ThisReference);
 
-                        if (hasArguments)
-                            Output.Comma();
+                    if (hasArguments)
+                        Output.Comma();
+                } else {
+                    thisRef();
+                    Output.Dot();
+                    if (isOverloaded) {
+                        Output.Identifier(method.GetName(false) + "$" + method.Signature.UniqueHash);
+                        Output.LPar();
+                        if (hasGenericArguments) {
+                            Output.CommaSeparatedList(invocation.GenericArguments, ReferenceContext, ListValueType.TypeIdentifier);
+                            if (hasArguments)
+                                Output.Comma();
+                        }
                     } else {
-                        thisRef();
-                        Output.Dot();
                         Visit(invocation.Method);
                         Output.LPar();
                     }

@@ -1091,12 +1091,21 @@ namespace JSIL.Internal {
 
                 CloseBracket(false);
 
-                if (signature.GenericParameterNames != null) {
-                    Comma();
+                Comma();
+
+                if (signature.GenericParameterNames != null)
+                {
                     OpenBracket(false);
                     CommaSeparatedList(signature.GenericParameterNames, context, ListValueType.Primitive);
                     CloseBracket(false);
+                } else {
+                    WriteRaw("null");
                 }
+
+                Comma();
+                WriteRaw("null");
+                Comma();
+                WriteRaw("\"{0}\"", signature.UniqueHash);
             } finally {
                 context.SignatureMethod = oldSignature;
             }

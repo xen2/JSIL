@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
+using ICSharpCode.Decompiler.ILAst;
 using Mono.Cecil;
 
 namespace JSIL.Internal {
@@ -29,6 +31,7 @@ namespace JSIL.Internal {
         internal int ID;
 
         protected int? _Hash;
+        protected string _UniqueHash;
 
         public MethodSignature (
             TypeReference returnType, TypeReference[] parameterTypes, string[] genericParameterNames
@@ -54,6 +57,35 @@ namespace JSIL.Internal {
                     return 0;
 
                 return GenericParameterNames.Length;
+            }
+        }
+
+        public string UniqueHash {
+            get {
+                if (_UniqueHash == null) {
+                    var result = new StringBuilder();
+                    if (GenericParameterCount > 0) {
+                        result.Append("<");
+                        result.Append(string.Join(",", GenericParameterNames));
+                        result.Append(">");
+                    }
+                    result.Append("(");
+                    result.Append(string.Join(",", ParameterTypes.Select(x => x.ToString())));
+                    result.Append(")");
+                    result.Append("=");
+                    result.Append(ReturnType);
+                    var hash = new System.Security.Cryptography.SHA1CryptoServiceProvider().ComputeHash(Encoding.ASCII.GetBytes(result.ToString()));
+                    var base64Hash = Convert.ToBase64String(hash);
+                    
+                    // Takes first 12 character = 9 bytes = 2^72
+                    _UniqueHash = base64Hash.Substring(0, 12)
+                        .Replace('+', '_')
+                        .Replace('/', '$');
+
+                    //_UniqueHash = result.ToString();
+                }
+
+                return _UniqueHash;
             }
         }
 
@@ -124,6 +156,73 @@ namespace JSIL.Internal {
                 );
             }
         }
+
+        public MethodSignature ResolveGeneric(MemberReference member) {
+            return new MethodSignature(SubstituteTypeArgs(ReturnType, member), (from p in ParameterTypes select SubstituteTypeArgs(p, member)).ToArray(), new string[0]);
+        }
+
+        private static TypeReference SubstituteTypeArgs(TypeReference type, MemberReference member)
+		{
+			if (type is TypeSpecification) {
+				ArrayType arrayType = type as ArrayType;
+				if (arrayType != null) {
+					TypeReference elementType = SubstituteTypeArgs(arrayType.ElementType, member);
+					if (elementType != arrayType.ElementType) {
+						ArrayType newArrayType = new ArrayType(elementType);
+						newArrayType.Dimensions.Clear(); // remove the single dimension that Cecil adds by default
+						foreach (ArrayDimension d in arrayType.Dimensions)
+							newArrayType.Dimensions.Add(d);
+						return newArrayType;
+					} else {
+						return type;
+					}
+				}
+				ByReferenceType refType = type as ByReferenceType;
+				if (refType != null) {
+					TypeReference elementType = SubstituteTypeArgs(refType.ElementType, member);
+					return elementType != refType.ElementType ? new ByReferenceType(elementType) : type;
+				}
+				GenericInstanceType giType = type as GenericInstanceType;
+				if (giType != null) {
+					GenericInstanceType newType = new GenericInstanceType(giType.ElementType);
+					bool isChanged = false;
+					for (int i = 0; i < giType.GenericArguments.Count; i++) {
+						newType.GenericArguments.Add(SubstituteTypeArgs(giType.GenericArguments[i], member));
+						isChanged |= newType.GenericArguments[i] != giType.GenericArguments[i];
+					}
+					return isChanged ? newType : type;
+				}
+				OptionalModifierType optmodType = type as OptionalModifierType;
+				if (optmodType != null) {
+					TypeReference elementType = SubstituteTypeArgs(optmodType.ElementType, member);
+					return elementType != optmodType.ElementType ? new OptionalModifierType(optmodType.ModifierType, elementType) : type;
+				}
+				RequiredModifierType reqmodType = type as RequiredModifierType;
+				if (reqmodType != null) {
+					TypeReference elementType = SubstituteTypeArgs(reqmodType.ElementType, member);
+					return elementType != reqmodType.ElementType ? new RequiredModifierType(reqmodType.ModifierType, elementType) : type;
+				}
+				PointerType ptrType = type as PointerType;
+				if (ptrType != null) {
+					TypeReference elementType = SubstituteTypeArgs(ptrType.ElementType, member);
+					return elementType != ptrType.ElementType ? new PointerType(elementType) : type;
+				}
+			}
+			GenericParameter gp = type as GenericParameter;
+			if (gp != null) {
+				if (member.DeclaringType is ArrayType) {
+					return ((ArrayType)member.DeclaringType).ElementType;
+				} else if (gp.Owner.GenericParameterType == GenericParameterType.Method) {
+				    return type;
+				    //if (member is GenericInstanceMethod)
+				    //    return ((GenericInstanceMethod)member).GenericArguments[gp.Position];
+				} else  {
+                    if (member.DeclaringType is GenericInstanceType)
+					    return ((GenericInstanceType)member.DeclaringType).GenericArguments[gp.Position];
+				}
+			}
+			return type;
+		}
     }
 
     public class NamedMethodSignature {

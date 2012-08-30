@@ -2046,7 +2046,7 @@ JSIL.ImplementExternals(
     };
 
     $.Method({Public: true , Static: true }, "CompareExchange", 
-      new JSIL.MethodSignature("!!0", [JSIL.Reference.Of("!!0"), "!!0", "!!0"], ["T"]),
+      new JSIL.MethodSignature("!!0", [$jsilcore.TypeRef("JSIL.Reference", ["!!0"]), "!!0", "!!0"], ["T"]),
       function (T, targetRef, value, comparand) {
         return cmpxchg(targetRef, value, comparand);
       }
@@ -3719,7 +3719,7 @@ JSIL.ImplementExternals(
     );
     
     $.Method({Static:true , Public:true }, "ToArray", 
-      new JSIL.MethodSignature(System.Array.Of("!!0"), [$jsilcore.TypeRef("System.Collections.Generic.IEnumerable`1", ["!!0"])], ["TSource"]),
+      new JSIL.MethodSignature($jsilcore.TypeRef("System.Array", ["!!0"]), [$jsilcore.TypeRef("System.Collections.Generic.IEnumerable`1", ["!!0"])], ["TSource"]),
       function (T, enumerable) {
         return JSIL.EnumerableToArray(enumerable);
       }
@@ -3768,7 +3768,7 @@ JSIL.MakeStaticClass("System.Linq.Enumerable", true, [], function ($) {
   );
 
   $.ExternalMethod({Static:true , Public:true }, "ToArray", 
-    new JSIL.MethodSignature(System.Array.Of("!!0"), [$jsilcore.TypeRef("System.Collections.Generic.IEnumerable`1", ["!!0"])], ["TSource"])
+    new JSIL.MethodSignature($jsilcore.TypeRef("System.Array", ["!!0"]), [$jsilcore.TypeRef("System.Collections.Generic.IEnumerable`1", ["!!0"])], ["TSource"])
   );
 });
 
